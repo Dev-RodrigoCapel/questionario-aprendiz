@@ -1,8 +1,6 @@
 package com.capel.aprendiz;
 
 import android.content.Intent;
-import android.speech.tts.TextToSpeech;
-import android.speech.tts.Voice;
 
 import androidx.core.content.ContextCompat;
 
@@ -17,19 +15,12 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 @CapacitorPlugin(name = "Leitor")
 public class LeitorPlugin extends Plugin implements LeitorService.Listener {
 
-    private TextToSpeech probe;
-    private boolean probeReady = false;
-    private final List<PluginCall> voiceCalls = new ArrayList<>();
-
     @Override
-    public void load() {
-        LeitorService.listener = this;
-    }
+    public void load() { LeitorService.listener = this; }
 
     @Override
     public void onLeitorEvent(String type, String id, String msg) {
@@ -40,6 +31,7 @@ public class LeitorPlugin extends Plugin implements LeitorService.Listener {
         notifyListeners("leitor", o);
     }
 
+    /** items: [{id, file (caminho em www/), pauseMs}], rate: velocidade (1 = normal). */
     @PluginMethod
     public void play(PluginCall call) {
         JSArray arr = call.getArray("items");
@@ -48,16 +40,15 @@ public class LeitorPlugin extends Plugin implements LeitorService.Listener {
         try {
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.getJSONObject(i);
-                items.add(new LeitorService.Item(o.getString("id"), o.getString("text"), o.optInt("pauseMs", 0)));
+                items.add(new LeitorService.Item(o.getString("id"), o.getString("file"), o.optInt("pauseMs", 0)));
             }
         } catch (Exception e) { call.reject("Fila inválida", e); return; }
         synchronized (LeitorService.class) { LeitorService.pending = items; }
         Double r = call.getDouble("rate", 1.0);
         LeitorService.rate = r == null ? 1f : r.floatValue();
-        LeitorService.voiceName = call.getString("voice", null);
         LeitorService.listener = this;
-        Intent it = new Intent(getContext(), LeitorService.class).setAction(LeitorService.ACTION_PLAY);
-        ContextCompat.startForegroundService(getContext(), it);
+        ContextCompat.startForegroundService(getContext(),
+                new Intent(getContext(), LeitorService.class).setAction(LeitorService.ACTION_PLAY));
         call.resolve();
     }
 
@@ -68,43 +59,8 @@ public class LeitorPlugin extends Plugin implements LeitorService.Listener {
         call.resolve();
     }
 
-    @PluginMethod
-    public void getVoices(PluginCall call) {
-        if (probeReady) { resolveVoices(call); return; }
-        voiceCalls.add(call);
-        if (probe == null) {
-            probe = new TextToSpeech(getContext().getApplicationContext(), status -> {
-                probeReady = status == TextToSpeech.SUCCESS;
-                for (PluginCall c : new ArrayList<>(voiceCalls)) resolveVoices(c);
-                voiceCalls.clear();
-            });
-        }
-    }
-
-    private void resolveVoices(PluginCall call) {
-        JSArray list = new JSArray();
-        if (probeReady && probe.getVoices() != null) {
-            for (Voice v : probe.getVoices()) {
-                Locale l = v.getLocale();
-                if (l == null || !"pt".equals(l.getLanguage())) continue;
-                if (v.getFeatures() != null && v.getFeatures().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)) continue;
-                JSObject o = new JSObject();
-                o.put("name", v.getName());
-                o.put("lang", l.toLanguageTag());
-                o.put("network", v.isNetworkConnectionRequired());
-                o.put("quality", v.getQuality());
-                list.put(o);
-            }
-        }
-        JSObject res = new JSObject();
-        res.put("voices", list);
-        res.put("ready", probeReady);
-        call.resolve(res);
-    }
-
     @Override
     protected void handleOnDestroy() {
         if (LeitorService.listener == this) LeitorService.listener = null;
-        if (probe != null) { probe.shutdown(); probe = null; }
     }
 }

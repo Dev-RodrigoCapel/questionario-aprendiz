@@ -8,35 +8,32 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
+import android.content.res.AssetFileDescriptor;
 import android.media.AudioAttributes;
+import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
-import android.speech.tts.TextToSpeech;
-import android.speech.tts.UtteranceProgressListener;
-import android.speech.tts.Voice;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.ServiceCompat;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
- * Serviço em primeiro plano que lê a fila de perguntas/respostas com o TTS do Android.
- * A fila inteira (falas + pausas) é entregue ao motor de voz de uma vez, então a leitura
- * continua com a tela apagada, sem depender do JavaScript da WebView.
+ * Serviço em primeiro plano que toca, em sequência, os áudios gravados (voz neural)
+ * de perguntas e respostas, com as pausas entre eles. Roda com a tela apagada.
  */
-public class LeitorService extends Service implements TextToSpeech.OnInitListener {
+public class LeitorService extends Service {
 
     public interface Listener { void onLeitorEvent(String type, String id, String msg); }
 
     public static class Item {
-        final String id; final String text; final int pauseMs;
-        public Item(String id, String text, int pauseMs) { this.id = id; this.text = text; this.pauseMs = pauseMs; }
+        final String id; final String file; final int pauseMs;
+        public Item(String id, String file, int pauseMs) { this.id = id; this.file = file; this.pauseMs = pauseMs; }
     }
 
     public static final String ACTION_PLAY = "com.capel.aprendiz.PLAY";
@@ -48,14 +45,13 @@ public class LeitorService extends Service implements TextToSpeech.OnInitListene
     static volatile LeitorService instance;
     static List<Item> pending = new ArrayList<>();
     static float rate = 1f;
-    static String voiceName = null;
 
-    private TextToSpeech tts;
-    private boolean ready = false;
-    private PowerManager.WakeLock wakeLock;
-    private volatile String lastId = null;
-    private int lastStartId = 0;
     private final Handler main = new Handler(Looper.getMainLooper());
+    private List<Item> items = new ArrayList<>();
+    private MediaPlayer player;
+    private PowerManager.WakeLock wakeLock;
+    private int session = 0;
+    private int lastStartId = 0;
 
     static void emit(String type, String id, String msg) {
         Listener l = listener;
@@ -71,79 +67,66 @@ public class LeitorService extends Service implements TextToSpeech.OnInitListene
         lastStartId = startId;
         String action = intent != null ? intent.getAction() : null;
         if (ACTION_STOP.equals(action)) {
-            if (tts != null) tts.stop();
+            halt();
             emit("end", null, "stopped");
             finish();
             return START_NOT_STICKY;
         }
         goForeground();
         acquireWakeLock();
-        if (tts == null) {
-            tts = new TextToSpeech(getApplicationContext(), this);
-        } else if (ready) {
-            speakAll();
-        }
+        halt();
+        synchronized (LeitorService.class) { items = new ArrayList<>(pending); }
+        final int s = session;
+        main.post(() -> playIndex(0, s));
         return START_NOT_STICKY;
     }
 
-    @Override
-    public void onInit(int status) {
-        if (status != TextToSpeech.SUCCESS) {
-            emit("erro", null, "Não foi possível iniciar o mecanismo de voz do Android.");
+    private void playIndex(int i, int s) {
+        if (s != session) return;
+        if (i >= items.size()) {
+            emit("end", null, "complete");
             finish();
             return;
         }
-        ready = true;
-        tts.setAudioAttributes(new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .build());
-        tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-            @Override public void onStart(String id) { if (!id.contains("#")) emit("start", id, null); }
-            @Override public void onDone(String id) { done(id); }
-            @Override public void onError(String id) { done(id); }
-            @Override public void onStop(String id, boolean interrupted) { }
-        });
-        speakAll();
+        final Item it = items.get(i);
+        emit("start", it.id, null);
+        try {
+            MediaPlayer mp = new MediaPlayer();
+            mp.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build());
+            try (AssetFileDescriptor afd = getAssets().openFd("public/" + it.file)) {
+                mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            }
+            mp.prepare();
+            mp.setOnCompletionListener(p -> {
+                p.release();
+                if (player == p) player = null;
+                if (s != session) return;
+                emit("done", it.id, null);
+                main.postDelayed(() -> playIndex(i + 1, s), Math.max(0, it.pauseMs));
+            });
+            player = mp;
+            if (Math.abs(rate - 1f) > 0.01f) {
+                mp.setPlaybackParams(mp.getPlaybackParams().setSpeed(rate));
+            }
+            mp.start();
+        } catch (Exception e) {
+            emit("erro", it.id, "Não foi possível tocar " + it.file + ": " + e.getMessage());
+            main.postDelayed(() -> playIndex(i + 1, s), 300);
+        }
     }
 
-    private void done(String id) {
-        if (!id.contains("#")) emit("done", id, null);
-        if (id.equals(lastId)) {
-            emit("end", null, "complete");
-            main.post(this::finish);
+    /** Interrompe o que estiver tocando ou agendado. */
+    private void halt() {
+        session++;
+        main.removeCallbacksAndMessages(null);
+        if (player != null) {
+            try { player.stop(); } catch (Exception ignored) { }
+            player.release();
+            player = null;
         }
-    }
-
-    private void speakAll() {
-        List<Item> items;
-        synchronized (LeitorService.class) { items = new ArrayList<>(pending); }
-        tts.stop();
-        if (items.isEmpty()) { finish(); return; }
-        tts.setSpeechRate(rate);
-        boolean voiceSet = false;
-        if (voiceName != null && tts.getVoices() != null) {
-            for (Voice v : tts.getVoices()) {
-                if (v.getName().equals(voiceName)) { voiceSet = tts.setVoice(v) == TextToSpeech.SUCCESS; break; }
-            }
-        }
-        if (!voiceSet) {
-            int r = tts.setLanguage(new Locale("pt", "BR"));
-            if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
-                emit("erro", null, "A voz em português não está instalada. Abra Configurações > Saída de conversão de texto em voz e instale Português (Brasil).");
-            }
-        }
-        String last = null;
-        for (Item it : items) {
-            tts.speak(it.text, TextToSpeech.QUEUE_ADD, null, it.id);
-            last = it.id;
-            if (it.pauseMs > 0) {
-                String pid = it.id + "#p";
-                tts.playSilentUtterance(it.pauseMs, TextToSpeech.QUEUE_ADD, pid);
-                last = pid;
-            }
-        }
-        lastId = last;
     }
 
     private void goForeground() {
@@ -187,16 +170,15 @@ public class LeitorService extends Service implements TextToSpeech.OnInitListene
     }
 
     void stopNow() {
-        lastId = null;
-        if (tts != null) tts.stop();
+        halt();
         finish();
     }
 
     @Override
     public void onDestroy() {
         instance = null;
+        halt();
         if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
-        if (tts != null) { tts.stop(); tts.shutdown(); tts = null; }
         super.onDestroy();
     }
 }
