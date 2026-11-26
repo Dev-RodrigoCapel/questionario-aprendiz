@@ -1,0 +1,6 @@
+{
+  "appId": "com.capel.aprendiz",
+  "appName": "Aprendiz",
+  "webDir": "www",
+  "android": { "backgroundColor": "#fbfbf9" }
+}

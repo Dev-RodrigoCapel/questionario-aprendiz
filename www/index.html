@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Questionário do Aprendiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* VOICE: sóbrio, cerimonial, calmo — um instrumento de estudo, não um jogo
+   IDEA: a prancha de estudo sobre o pavimento mosaico
+   PICTURE: o cartão da pergunta, grande, com a faixa de mosaico preto e branco
+   COLOUR and TYPE: branco e preto do pavimento, azul da Loja simbólica como acento; Cinzel + Spectral
+   LAYOUT: coluna única: título, modo, cartão, controles de áudio, ajustes e mapa das 51 questões */
+:root{color-scheme:light dark;--bg:light-dark(#fbfbf9,#0f1115);--card:light-dark(#fff,#181b21);--ink:light-dark(#16171a,#ecebe6);--mute:light-dark(#5e6068,#a2a4ab);--line:light-dark(#dcdcd6,#2c3038);--blue:light-dark(#2350b8,#7ea2f2);--blueink:light-dark(#fff,#0f1115);--soft:light-dark(#eef2fb,#1c2433);--tile:light-dark(#16171a,#ecebe6);--tile2:light-dark(#fbfbf9,#0f1115)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;padding:var(--safe-area-inset-top,env(safe-area-inset-top,0px)) var(--safe-area-inset-right,0px) var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) var(--safe-area-inset-left,0px);background:var(--bg);color:var(--ink);font:17px/1.55 Spectral,Georgia,serif;overflow-x:clip}
+.mosaic{height:18px;background:repeating-conic-gradient(var(--tile) 0 25%,var(--tile2) 0 50%) 0 0/18px 18px;border-block:1px solid var(--tile)}
+.wrap{max-width:820px;margin:0 auto;padding:clamp(20px,4vw,40px) max(4vw,16px) 56px}
+header{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:end;justify-content:space-between;margin-bottom:18px}
+h1{font:700 clamp(26px,4.6vw,38px)/1.05 Cinzel,serif;margin:0;text-wrap:balance}
+h1 small{display:block;font:400 15px/1.4 Spectral,serif;color:var(--mute);margin-top:6px}
+.seg{display:inline-flex;border:1px solid var(--ink);border-radius:999px;padding:3px;gap:3px}
+.seg button{border:0;background:none;color:var(--ink);font:600 15px Spectral,serif;padding:0 16px;min-height:40px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 1px 0 var(--line),0 14px 34px -22px rgba(0,0,0,.35)}
+.top{display:flex;align-items:center;gap:12px;padding:16px 20px 0}
+.num{font:700 15px Cinzel,serif;letter-spacing:.02em;color:var(--blue)}
+.prog{flex:1;height:4px;background:var(--line);border-radius:4px;overflow:hidden}.prog i{display:block;height:100%;background:var(--blue);transition:width .3s}
+.star{border:0;background:none;color:var(--mute);cursor:pointer;width:44px;height:44px;display:grid;place-items:center;border-radius:50%}
+.star[aria-pressed=true]{color:var(--blue)}.star svg{width:24px;height:24px}
+.body{padding:10px 24px 22px}
+.q{font:600 clamp(22px,3.6vw,30px)/1.22 Spectral,serif;margin:4px 0 6px;text-wrap:pretty}
+.ref{color:var(--mute);font-size:14px;margin:0 0 18px}
+.ans{border-top:1px dashed var(--line);padding-top:16px;min-height:96px}
+.ans .lab{font:700 13px Cinzel,serif;color:var(--blue);margin-bottom:6px}
+.ans p{margin:0 0 8px}.ans ul{margin:0;padding-left:20px}.ans li{margin:4px 0}
+.hidden-ans{display:grid;place-items:center;min-height:96px}
+.reveal{border:1px solid var(--blue);color:var(--blue);background:var(--soft);font:600 16px Spectral,serif;padding:0 22px;min-height:46px;border-radius:999px;cursor:pointer}
+.status{min-height:24px;font-size:14px;color:var(--mute);text-align:center;margin:14px 0 4px}
+.status b{color:var(--blue)}
+.ctrl{display:flex;justify-content:center;align-items:center;gap:18px;margin:4px 0 10px}
+.ib{width:52px;height:52px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.ib svg{width:22px;height:22px}
+.play{width:76px;height:76px;background:var(--blue);border-color:var(--blue);color:var(--blueink)}.play svg{width:32px;height:32px}
+.mini{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:26px}
+.mini button{border:1px solid var(--line);background:none;color:var(--ink);font:15px Spectral,serif;padding:0 14px;min-height:44px;border-radius:10px;cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+h2{font:700 17px Cinzel,serif;margin:0 0 12px}
+.sets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 22px;border-top:1px solid var(--line);padding-top:22px;margin-bottom:26px}
+.sets label{display:flex;flex-direction:column;gap:6px;font-size:15px}
+.sets .chk{flex-direction:row;align-items:center;gap:10px;min-height:44px}
+.sets .chk input{width:22px;height:22px;accent-color:var(--blue)}
+select{font:16px Spectral,serif;min-height:44px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);width:100%}
+input[type=range]{width:100%;accent-color:var(--blue);min-height:28px}
+.val{color:var(--blue);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:6px}
+.grid button{min-height:44px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;font:600 15px Spectral,serif;cursor:pointer;position:relative}
+.grid button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid button.mk::after{content:"";position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--blue)}
+.gh{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:22px;margin-bottom:12px}.gh h2{margin:0}
+.warn{background:var(--soft);border:1px solid var(--blue);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+.foot{color:var(--mute);font-size:13px;margin-top:22px}
+@media(max-width:600px){.sets{grid-template-columns:minmax(0,1fr)}.body{padding:8px 18px 20px}.ctrl{gap:14px}header{align-items:start}}
+@media(prefers-reduced-motion:reduce){.prog i{transition:none}}
+</style>
+</head>
+<body>
+<div class="mosaic" aria-hidden="true"></div>
+<div class="wrap">
+<header>
+  <h1>Questionário do Aprendiz<small>51 perguntas e respostas · estudo com leitura em voz alta</small></h1>
+  <div class="seg" role="group" aria-label="Modo">
+    <button id="mSeq" aria-pressed="true">Em sequência</button>
+    <button id="mRand" aria-pressed="false">Aleatório</button>
+  </div>
+</header>
+<div id="warn" class="warn" hidden>Este navegador não oferece leitura em voz alta. Abra no Chrome, Edge ou Safari para ouvir as perguntas.</div>
+
+<section class="card" aria-live="polite">
+  <div class="top">
+    <span class="num" id="num">Nº 01</span>
+    <div class="prog" aria-hidden="true"><i id="bar"></i></div>
+    <button class="star" id="star" aria-pressed="false" aria-label="Marcar para revisar" title="Marcar para revisar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9z"/></svg></button>
+  </div>
+  <div class="body">
+    <p class="q" id="q"></p>
+    <p class="ref" id="ref"></p>
+    <div class="ans" id="ans"></div>
+  </div>
+</section>
+
+<div class="status" id="status">Toque em ▶ para ouvir a pergunta e, depois da pausa, a resposta.</div>
+<div class="ctrl">
+  <button class="ib" id="prev" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+  <button class="ib play" id="play" aria-label="Ouvir"><svg id="icoPlay" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg><svg id="icoStop" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
+  <button class="ib" id="next" aria-label="Próxima"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+</div>
+<div class="mini">
+  <button id="sayQ">Ouvir só a pergunta</button>
+  <button id="sayA">Ouvir só a resposta</button>
+  <button id="shuffle" hidden>Embaralhar de novo</button>
+</div>
+
+<h2>Ajustes da leitura</h2>
+<div class="sets">
+  <label>Voz<select id="voice"></select></label>
+  <label>Velocidade: <span class="val" id="rateV"></span><input type="range" id="rate" min="0.6" max="1.5" step="0.05"></label>
+  <label>Pausa para pensar antes da resposta: <span class="val" id="pauseV"></span><input type="range" id="pause" min="0" max="15" step="1"></label>
+  <label class="chk"><input type="checkbox" id="auto">Seguir para a próxima sozinho (mãos livres)</label>
+  <label class="chk"><input type="checkbox" id="readRef">Ler também a página de referência</label>
+  <label class="chk"><input type="checkbox" id="onlyMk">Estudar só as marcadas para revisar</label>
+</div>
+
+<div class="gh"><h2>Ir para a questão</h2><span class="foot" style="margin:0">Ponto azul = marcada para revisar</span></div>
+<div class="grid" id="grid"></div>
+
+<p class="foot">Atalhos: espaço ouve ou para · ← → navega · Enter revela a resposta · M marca. <span id="note">Com a tela do celular apagada, a maioria dos aparelhos interrompe a leitura.</span></p>
+</div>
+
+<script src="capacitor.js"></script>
+<script>
+{
+const Q=[
+[1,"Sois Maçom?","p. 31","M:. M:. II:. C:. T:. M:. R:.","Eme. Eme. I, I. Cê. Tê. Eme. Erre."],
+[2,"A que é consagrado o Grau de Aprendiz?","p. 47","À Fraternidade Humana, exemplificada na união dos irmãos."],
+[3,"Como conseguistes entrar no Templo?","p. 276–277","Por duas pancadas fortes na porta do Templo. Tendo a ponta de uma espada encostada ao peito."],
+[4,"Como fostes recebido Maçom?","p. 275","Nem nu, nem vestido. Vendaram-me os olhos, tiraram-me todos os metais, que representavam o egoísmo do mundo profano, e fui conduzido à porta do Templo por um amigo, que depois conheci como Ir:.","Nem nu, nem vestido. Vendaram-me os olhos, tiraram-me todos os metais, que representavam o egoísmo do mundo profano, e fui conduzido à porta do Templo por um amigo, que depois conheci como Irmão."],
+[5,"Que fizeram para vos instruir?","p. 280","O V:. M:. tomou-me pela mão direita, deu-me o Toque, a Palavra e toda a instrução do Grau. Fiz, em seguida, a primeira lição na P:. B:. (Pedra Bruta) e, por fim, senti a ventura de ser proclamado Maçom.","O Venerável Mestre tomou-me pela mão direita, deu-me o Toque, a Palavra e toda a instrução do Grau. Fiz, em seguida, a primeira lição na Pedra Bruta e, por fim, senti a ventura de ser proclamado Maçom."],
+[6,"Como terminou cada uma das Viagens?","p. 278–279","• 1ª Viagem: Coluna do Sul; três pancadas no ombro direito do 2° Vigilante.\n• 2ª Viagem: Coluna do Norte; três pancadas no ombro direito do 1° Vigilante.\n• 3ª Viagem: Altar do Venerável Mestre, onde bati da mesma forma.","Primeira viagem: Coluna do Sul; três pancadas no ombro direito do Segundo Vigilante. Segunda viagem: Coluna do Norte; três pancadas no ombro direito do Primeiro Vigilante. Terceira viagem: Altar do Venerável Mestre, onde bati da mesma forma."],
+[7,"Onde se achavam situadas as Portas?","p. 50","No Ocidente, entre as Colunas J e B.","No Ocidente, entre as Colunas jota e bê."],
+[8,"Que vos disseram quando bateste?","p. 276","“Quem vem lá?”\n“Um Candidato que quer ser iniciado na Ordem Maçônica e admitido em seus Augustos Mistérios.”","Perguntaram: Quem vem lá? E foi respondido: Um Candidato que quer ser iniciado na Ordem Maçônica e admitido em seus Augustos Mistérios."],
+[9,"Que significam as Purificações?","p. 289","As purificações afirmam que o profano não pode, por si só, alcançar o templo da filosofia."],
+[10,"Que vos deram depois?","p. 278","Deram-me um líquido a beber e, inexplicavelmente, o doce se fez amargo à minha revelia, pois o meu pensamento não sofrera mudança."],
+[11,"Como vos ligastes à Ordem Maçônica?","p. 304","Por um Juramento e uma Consagração."],
+[12,"Que prometestes?","p. 225–227","Reconhecer o GOB como Potência Maçônica Regular, Legal e Legítima, nunca revelar o que ouvir e prestar-lhe obediência quando me for comunicado como segredo da instituição.","Reconhecer o Grande Oriente do Brasil como Potência Maçônica Regular, Legal e Legítima, nunca revelar o que ouvir e prestar-lhe obediência quando me for comunicado como segredo da instituição."],
+[13,"Como se reconhece um Maçom?","p. 282","Além dos atos que praticam, revelando o influxo da moral ensinada em nossos Templos, eles se reconhecem entre si pelos Sinais, pelos Toques e pelas Palavras."],
+[14,"Como fazeis o Sinal?","p. 99 e 319","Deve ser feito em pé, com os pés em esquadrias, parado e com as mãos desocupadas."],
+[15,"Como dais a Palavra?","p. 100 e 314","Ao ouvido direito de um para o outro, soletrando letra por letra, sem pronunciar a Palavra por inteiro."],
+[16,"Que significa ela?","p. 99","Significa FORÇA e é representada por uma espiga de trigo.","Significa força, e é representada por uma espiga de trigo."],
+[17,"Que é o Toque?","p. 244","É um sinal de reconhecimento entre irmãos."],
+[18,"Como estais agora vestido?","p. 281","Estou vestido com este avental."],
+[19,"Que significa o Avental?","p. 281","Ele nos lembra que o homem nasceu para o trabalho e que todo Maçom deve trabalhar infatigavelmente para a descoberta da verdade e o aperfeiçoamento da humanidade. O Avental, entre nós, é símbolo da fraternização e, por isso, dois irmãos desavindos não podem absolutamente usá-lo, antes da reconciliação."],
+[20,"Qual é a idade do Aprendiz?","p. 22","Três anos."],
+[21,"Como se colocam o Esquadro e o Compasso?","p. 101, 180 e 324","Com o Livro da Lei aberto, coloca-se o Esquadro sobre o Compasso, e este na posição do Grau, com as pontas voltadas para o Ocidente. Quando o Livro da Lei estiver fechado, o Esq:. e o Comp:. devem estar colocados sobre o mesmo na posição do Grau, com as pontas voltadas para o Or:.","Com o Livro da Lei aberto, coloca-se o Esquadro sobre o Compasso, e este na posição do Grau, com as pontas voltadas para o Ocidente. Quando o Livro da Lei estiver fechado, o Esquadro e o Compasso devem estar colocados sobre o mesmo na posição do Grau, com as pontas voltadas para o Oriente."],
+[22,"Qual o número que domina o Grau do Aprendiz?","p. 292","O número 3. É o triângulo equilátero. A bateria com a marcha e a idade do aprendiz encerram o número 3.","O número três. É o triângulo equilátero. A bateria, com a marcha e a idade do aprendiz, encerram o número três."],
+[23,"Qual é o Tempo de Trabalho?","p. 284","Do meio-dia à meia-noite."],
+[24,"Quais as ferramentas do Aprendiz?","p. 292","O Maço e o Cinzel."],
+[25,"Onde trabalham os Aprendizes?","p. 297","Na Pedra Bruta."],
+[26,"Onde fostes recebido Maçom?","p. 296","Em uma Loja Justa, Perfeita e Regular."],
+[27,"Que é preciso para que uma Loja seja Justa e Perfeita?","p. 296","Que 3 a Governem, 5 a componham e 7 a completem.","Que três a governem, cinco a componham e sete a completem."],
+[28,"Que é uma Loja Regular?","p. 296","É a Loja Justa e Perfeita que obedece à Potência Regular da qual recebeu Carta Constitutiva, praticando rigorosamente os princípios básicos da Maçonaria Universal."],
+[29,"Que se faz em vossa Loja?","p. 114","Levantam-se templos à virtude e cavam-se masmorras ao vício."],
+[30,"Como é construída nossa Loja?","p. 293–294","Em forma de quadrilongo ou retângulo alongado, soma de três quadrados.\n• Comprimento: Oriente ao Ocidente\n• Largura: Sul ao Norte\n• Altura: Terra ao Céu\n• Profundidade: da superfície ao centro da Terra","Em forma de quadrilongo ou retângulo alongado, soma de três quadrados. Comprimento: do Oriente ao Ocidente. Largura: do Sul ao Norte. Altura: da Terra ao Céu. Profundidade: da superfície ao centro da Terra."],
+[31,"Quantos degraus existem entre o piso do Ocidente e do Oriente e quantos conduzem ao Trono? Dizei-lhes os nomes.","p. 301","• Do Ocidente ao Oriente: quatro degraus – FORÇA, TRABALHO, CIÊNCIA e VIRTUDE.\n• Conduzindo ao Trono: três degraus – PUREZA, LUZ e VERDADE.","Do Ocidente ao Oriente: quatro degraus. Força, trabalho, ciência e virtude. Conduzindo ao Trono: três degraus. Pureza, luz e verdade."],
+[32,"Quais são os pilares da Loja?","p. 301–302","São três: Sapientia, Salus e Stabilitas, situados no Oriente, Ocidente e Sul."],
+[33,"Que significa S:. S:. S:.?","p. 302","Sapientia (Sabedoria), Salus (Força) e Stabilitas (Beleza), que sustentam a Loja.","Sapientia, sabedoria. Salus, força. E Stabilitas, beleza. Que sustentam a Loja.","Que significa esse, esse, esse?"],
+[34,"Quais são os Paramentos da Loja?","p. 298","Dois – Delta Luminoso e o Livro da Lei.","Dois. O Delta Luminoso e o Livro da Lei."],
+[35,"Quais são os Ornamentos de uma Loja?","p. 299","Três – Pavimento Mosaico, Corda de 81 nós e Compasso-Esquadro.","Três. Pavimento Mosaico, Corda de oitenta e um nós, e Compasso e Esquadro."],
+[36,"Quais são as Joias Móveis?","p. 301","Esquadro, Nível e Prumo, que adornam o Venerável e os Vigilantes. E são transferidas aos sucessores."],
+[37,"Quais são as Joias Fixas?","p. 300","Pedra Bruta, Pedra Cúbica e Prancha da Loja, sempre presentes como referência de ensino e instrução."],
+[38,"Quantas são as Colunas?","p. 300","Duas:\n• J (Jachin): Ocidente, Norte – 1° Vigilante\n• B (Boaz): Ocidente, Sul – 2° Vigilante","Duas. Jota, Jaquim: Ocidente, Norte, Primeiro Vigilante. Bê, Boaz: Ocidente, Sul, Segundo Vigilante."],
+[39,"Que representam as Quatro Borlas?","p. 303","Representam as quatro virtudes cardiais: Temperança, Justiça, Coragem e Prudência."],
+[40,"Que significa a Espada Flamejante?","p. 300","A Espada Flamejante ou Ondulada é emblema de magistério e instrumento necessário à Consagração do Neófito, pois nela soa a Bateria do Grau."],
+[41,"Que é o Livro da Lei?","p. 52, 299","No Rito Brasileiro, é a Bíblia Sagrada, símbolo de verdade espiritual e guia moral. O candidato pode jurar sobre o Livro de sua fé."],
+[42,"Que nome damos ao Deus Criador?","p. 300","Supremo Arquiteto do Universo (S:. A:. D:. U:.)","Supremo Arquiteto do Universo."],
+[43,"Onde se abre a Bíblia Sagrada?","p. 180","No Altar dos Juramentos, geralmente no Salmo 133, invocando a presença de Deus para abençoar os trabalhos.","No Altar dos Juramentos, geralmente no Salmo cento e trinta e três, invocando a presença de Deus para abençoar os trabalhos."],
+[44,"Por que as Lojas Maçônicas são chamadas de “Loja de São João”?","p. 285","Porque São João foi patrono das corporações de construtores na Idade Média. A primeira Grande Loja foi fundada em 24 de junho de 1717, dia de São João Batista."],
+[45,"Qual é a Virtude essencial do Maçom?","p. 307","Tolerância, entendida como polimento da Pedra Bruta e aprimoramento pessoal."],
+[46,"Que exigiram para serdes Maçom?","p. 274","Ser livre e de bons costumes."],
+[47,"Qual é o laço que nos une?","p. 307–308","A Solidariedade, simbolizada pela Corda de 81 nós, fortalecendo o vínculo entre irmãos.","A Solidariedade, simbolizada pela Corda de oitenta e um nós, fortalecendo o vínculo entre irmãos."],
+[48,"Como se quebra a Cadeia de União?","p. 314–315","Forma-se no interior do Templo, após o encerramento da Sessão, para transmitir a Palavra Semestral. É quebrada quando há divergência na transmissão."],
+[49,"Quais são os fundamentos maçônicos da Solidariedade?","p. 309","Os ensinamentos de nossa Ordem nos obrigam, sim, a proteger nossos IIr:., mas devidamente, em tudo o que for Justo e Honesto. A Solidariedade Maçônica situa-se entre estas duas paralelas: a Justiça e a Honestidade.","Os ensinamentos de nossa Ordem nos obrigam, sim, a proteger nossos Irmãos, mas devidamente, em tudo o que for Justo e Honesto. A Solidariedade Maçônica situa-se entre estas duas paralelas: a Justiça e a Honestidade."],
+[50,"A que jurisdição pertence a nossa Loja e qual é o Rito que praticamos?","—","Federada ao Grande Oriente do Brasil (GOB), jurisdicionada pelo GOB/MT e praticante do Rito Brasileiro.","Federada ao Grande Oriente do Brasil, jurisdicionada pelo Grande Oriente do Brasil em Mato Grosso, e praticante do Rito Brasileiro."],
+[51,"Que é a Maçonaria?","p. 274","Uma Ordem discreta que admite homens de honra e bons costumes. Seu objetivo é tornar a humanidade mais feliz em âmbito universal, fundamentada em filosofia, filantropia, moral, ajuda mútua e busca da verdade."]
+].map(r=>({n:r[0],q:r[1],ref:r[2],a:r[3],fa:r[4]||r[3],fq:r[5]||r[1]}));
+Q[50].label="Resposta pessoal";
+
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem('aprendiz.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('aprendiz.'+k,JSON.stringify(v))}catch(e){}}};
+const S=Object.assign({mode:'seq',rate:0.95,pause:3,auto:true,readRef:false,onlyMk:false,voice:''},store.get('set',{}));
+const marked=new Set(store.get('marked',[]));
+let order=[],pos=0,revealed=false,playing=false,run=0;
+const tts='speechSynthesis' in window;
+const native=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+const Leitor=native&&window.capacitorExports?window.capacitorExports.registerPlugin('Leitor'):null;
+if(!tts&&!Leitor)$('warn').hidden=false;
+if(Leitor)$('note').textContent='A leitura continua com a tela apagada; para parar, use o botão Parar na notificação.';
+
+const pad=n=>String(n).padStart(2,'0');
+const cur=()=>Q[order[pos]];
+const save=()=>{store.set('set',S);store.set('marked',[...marked])};
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function buildOrder(keep){
+  const id=keep&&order.length?order[pos]:null;
+  let base=Q.map((_,i)=>i);
+  if(S.onlyMk){const m=base.filter(i=>marked.has(Q[i].n));if(m.length)base=m;else{S.onlyMk=false;$('onlyMk').checked=false;status('Nenhuma questão marcada ainda — mostrando todas.')}}
+  order=S.mode==='rand'?shuffle(base):base;
+  const k=id==null?-1:order.indexOf(id);pos=k<0?0:k;
+  if(S.mode==='rand'&&!keep)pos=0;
+}
+function status(html){$('status').innerHTML=html}
+function renderAnswer(){
+  const box=$('ans'),it=cur();box.textContent='';
+  if(!revealed){box.className='ans hidden-ans';const b=document.createElement('button');b.className='reveal';b.textContent='Revelar resposta';b.onclick=()=>{revealed=true;renderAnswer()};box.append(b);return}
+  box.className='ans';const lab=document.createElement('div');lab.className='lab';lab.textContent=it.label||'Resposta';box.append(lab);
+  let ul=null;
+  for(const line of it.a.split('\n')){
+    if(line.startsWith('• ')){if(!ul){ul=document.createElement('ul');box.append(ul)}const li=document.createElement('li');li.textContent=line.slice(2);ul.append(li)}
+    else{ul=null;const p=document.createElement('p');p.textContent=line;box.append(p)}
+  }
+}
+function render(){
+  const it=cur();
+  $('num').textContent=`Nº ${pad(it.n)} · ${pos+1} de ${order.length}`;
+  $('bar').style.width=((pos+1)/order.length*100)+'%';
+  $('q').textContent=it.q;
+  $('ref').textContent=it.ref==='—'?'Referência: —':'Referência: '+it.ref;
+  $('star').setAttribute('aria-pressed',marked.has(it.n));
+  renderAnswer();
+  for(const b of $('grid').children){const n=+b.dataset.n;b.classList.toggle('on',n===it.n);b.classList.toggle('mk',marked.has(n))}
+  $('mSeq').setAttribute('aria-pressed',S.mode==='seq');$('mRand').setAttribute('aria-pressed',S.mode==='rand');
+  $('shuffle').hidden=S.mode!=='rand';
+}
+$('grid').innerHTML=Q.map(x=>`<button data-n="${x.n}" aria-label="Questão ${x.n}">${pad(x.n)}</button>`).join('');
+
+/* ---------- voz ---------- */
+let voices=[];
+function loadVoices(){
+  if(!tts)return;const all=speechSynthesis.getVoices();if(!all.length)return;
+  const pt=all.filter(v=>/^pt/i.test(v.lang));
+  voices=(pt.length?pt:all).sort((a,b)=>(b.lang==='pt-BR')-(a.lang==='pt-BR'));
+  $('voice').innerHTML=voices.map((v,i)=>`<option value="${i}">${v.name.replace(/[<>&"]/g,'')} (${v.lang})</option>`).join('');
+  const k=voices.findIndex(v=>v.name===S.voice);$('voice').value=k<0?0:k;
+  if(!pt.length)status('Nenhuma voz em português instalada neste aparelho — a leitura usará outra voz.');
+}
+async function loadNativeVoices(){
+  try{
+    const r=await Leitor.getVoices();
+    voices=(r.voices||[]).sort((a,b)=>(b.lang==='pt-BR')-(a.lang==='pt-BR')||(a.network-b.network)||(b.quality-a.quality));
+    $('voice').innerHTML='<option value="-1">Padrão do aparelho (português)</option>'+voices.map((v,i)=>`<option value="${i}">${v.name.replace(/[<>&"]/g,'')} (${v.lang})${v.network?' · online':''}</option>`).join('');
+    const k=voices.findIndex(v=>v.name===S.voice);$('voice').value=k;
+    if(!voices.length)status('Nenhuma voz em português instalada. Instale em Configurações › Saída de texto em voz.');
+  }catch(e){}
+}
+if(Leitor)loadNativeVoices();
+else if(tts){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
+const CANCEL={};
+const wait=(ms,t)=>new Promise((res,rej)=>{const id=setTimeout(()=>t===run?res():rej(CANCEL),ms)});
+function chunks(text){
+  const out=[];for(const s of text.split(/(?<=[.!?;:])\s+/)){if(out.length&&(out[out.length-1]+' '+s).length<160)out[out.length-1]+=' '+s;else out.push(s)}return out.filter(Boolean);
+}
+async function say(text,t){
+  if(!tts)throw CANCEL;
+  for(const c of chunks(text)){
+    if(t!==run)throw CANCEL;
+    await new Promise(res=>{
+      const u=new SpeechSynthesisUtterance(c);u.lang='pt-BR';const v=voices[+$('voice').value];if(v){u.voice=v;u.lang=v.lang}u.rate=S.rate;
+      const guard=setTimeout(res,c.length*110/S.rate+4000);
+      u.onend=u.onerror=()=>{clearTimeout(guard);res()};
+      speechSynthesis.speak(u);
+    });
+  }
+  if(t!==run)throw CANCEL;
+}
+setInterval(()=>{if(tts&&playing&&speechSynthesis.paused)speechSynthesis.resume()},4000);
+const refSpoken=r=>r==='—'?'':'Referência: '+r.replace(/^p\.\s*/,'página ').replace(/\s*[–-]\s*/g,' a ')+'.';
+let lock=null;
+async function wake(on){try{if(on&&navigator.wakeLock&&!lock){lock=await navigator.wakeLock.request('screen')}else if(!on&&lock){await lock.release();lock=null}}catch(e){lock=null}}
+function setPlaying(p){playing=p;$('icoPlay').hidden=p;$('icoStop').hidden=!p;$('play').setAttribute('aria-label',p?'Parar':'Ouvir');wake(p)}
+let cd=null,single1=false;
+function stop(msg){run++;clearInterval(cd);if(Leitor)Leitor.stop().catch(()=>{});else if(tts)speechSynthesis.cancel();setPlaying(false);if(msg!==undefined)status(msg)}
+const endMsg=()=>!S.auto?'Toque em → para a próxima ou ▶ para ouvir de novo.':S.mode==='rand'?'Fim da rodada. Toque em “Embaralhar de novo” para outra ordem.':'Fim do questionário. Toque numa questão para recomeçar.';
+/* ---------- leitor nativo (Android) ---------- */
+function nativePlay(items){
+  const v=voices[+$('voice').value];
+  setPlaying(true);
+  Leitor.play({items,rate:S.rate,voice:v?v.name:null}).catch(e=>stop('Falha ao iniciar a voz: '+(e&&e.message||e)));
+}
+function nativeStart(){
+  stop();single1=false;
+  const items=[],last=S.auto?order.length-1:pos;
+  for(let p=pos;p<=last;p++){
+    const it=Q[order[p]],ref=S.readRef&&it.ref!=='—';
+    items.push({id:'q'+p,text:`Pergunta ${it.n}. ${it.fq}`,pauseMs:ref?0:S.pause*1000});
+    if(ref)items.push({id:'r'+p,text:refSpoken(it.ref),pauseMs:S.pause*1000});
+    items.push({id:'a'+p,text:`${it.label||'Resposta'}. ${it.fa}`,pauseMs:p<last?1800:0});
+  }
+  nativePlay(items);
+}
+if(Leitor)Leitor.addListener('leitor',e=>{
+  if(e.type==='erro'){status(String(e.msg||''));return}
+  if(!playing)return;
+  const k=e.id?e.id[0]:'',p=e.id?+e.id.slice(1):-1;
+  if(e.type==='start'){
+    clearInterval(cd);
+    if(k==='q'){pos=p;revealed=false;render();status(`<b>Pergunta ${cur().n}</b>`)}
+    else if(k==='a'){pos=p;revealed=true;render();status(`<b>${cur().label||'Resposta'}</b>`)}
+  }else if(e.type==='done'&&!single1&&((k==='q'&&!S.readRef)||k==='r')&&S.pause>0){
+    let s=S.pause;status(`Pense na resposta… <b>${s}</b>`);clearInterval(cd);
+    cd=setInterval(()=>{s--;if(s>0)status(`Pense na resposta… <b>${s}</b>`);else clearInterval(cd)},1000);
+  }else if(e.type==='done'&&k==='a'&&!single1&&S.auto){status('Próxima pergunta…')}
+  else if(e.type==='end'){clearInterval(cd);setPlaying(false);status(single1?'':e.msg==='complete'?endMsg():'Leitura parada.')}
+});
+
+async function playFrom(t){
+  try{
+    while(true){
+      const it=cur();revealed=false;render();
+      status(`<b>Pergunta ${it.n}</b>`);
+      await say(`Pergunta ${it.n}. ${it.fq}`,t);
+      if(S.readRef&&it.ref!=='—')await say(refSpoken(it.ref),t);
+      for(let s=S.pause;s>0;s--){status(`Pense na resposta… <b>${s}</b>`);await wait(1000,t)}
+      revealed=true;renderAnswer();status(`<b>${it.label||'Resposta'}</b>`);
+      await say(`${it.label||'Resposta'}. ${it.fa}`,t);
+      if(!S.auto){stop('Toque em → para a próxima ou ▶ para ouvir de novo.');return}
+      if(pos>=order.length-1){stop(S.mode==='rand'?'Fim da rodada. Toque em “Embaralhar de novo” para outra ordem.':'Fim do questionário. Toque numa questão para recomeçar.');return}
+      status('Próxima pergunta…');await wait(1800,t);pos++;
+    }
+  }catch(e){if(e!==CANCEL)throw e}
+}
+function start(){if(Leitor)return nativeStart();if(!tts){$('warn').hidden=false;return}stop();const t=run;setPlaying(true);setTimeout(()=>playFrom(t),80)}
+async function single(part){
+  if(Leitor){stop('');single1=true;const it=cur();if(part==='a'){revealed=true;renderAnswer()}
+    nativePlay([{id:part+pos,text:part==='q'?`Pergunta ${it.n}. ${it.fq}`:`${it.label||'Resposta'}. ${it.fa}`,pauseMs:0}]);return}
+  if(!tts){$('warn').hidden=false;return}
+  stop();const t=run,it=cur();setPlaying(true);
+  if(part==='a'){revealed=true;renderAnswer()}
+  try{await wait(80,t);await say(part==='q'?`Pergunta ${it.n}. ${it.fq}`:`${it.label||'Resposta'}. ${it.fa}`,t);stop('')}catch(e){if(e!==CANCEL)throw e}
+}
+function go(p){const was=playing;stop('');pos=Math.max(0,Math.min(order.length-1,p));revealed=false;render();if(was)start()}
+
+/* ---------- eventos ---------- */
+$('play').onclick=()=>playing?stop('Leitura parada.'):start();
+$('prev').onclick=()=>go(pos-1);
+$('next').onclick=()=>go(pos+1);
+$('sayQ').onclick=()=>single('q');
+$('sayA').onclick=()=>single('a');
+$('shuffle').onclick=()=>{stop('Nova ordem sorteada.');buildOrder(false);revealed=false;render()};
+const setMode=m=>{if(S.mode===m)return;stop(m==='rand'?'Modo aleatório: ordem sorteada, sem repetir até o fim da rodada.':'Modo em sequência.');S.mode=m;save();buildOrder(m==='seq');revealed=false;render()};
+$('mSeq').onclick=()=>setMode('seq');$('mRand').onclick=()=>setMode('rand');
+$('star').onclick=()=>{const n=cur().n;marked.has(n)?marked.delete(n):marked.add(n);save();render()};
+$('grid').onclick=e=>{const b=e.target.closest('button');if(!b)return;const i=Q.findIndex(x=>x.n===+b.dataset.n);let k=order.indexOf(i);if(k<0){S.onlyMk=false;$('onlyMk').checked=false;save();buildOrder(true);k=order.indexOf(i)}go(k)};
+const bindRange=(id,fmt)=>{const el=$(id);el.value=S[id];$(id+'V').textContent=fmt(S[id]);el.oninput=()=>{S[id]=+el.value;$(id+'V').textContent=fmt(S[id]);save()}};
+bindRange('rate',v=>v.toFixed(2).replace('.',',')+'×');
+bindRange('pause',v=>v?v+' s':'sem pausa');
+for(const id of ['auto','readRef','onlyMk']){const el=$(id);el.checked=S[id];el.onchange=()=>{S[id]=el.checked;save();if(id==='onlyMk'){stop('');buildOrder(true);revealed=false;render()}}}
+$('voice').onchange=()=>{const v=voices[+$('voice').value];S.voice=v?v.name:'';save()};
+document.addEventListener('keydown',e=>{
+  if(e.target.closest('select,input'))return;
+  if(e.key===' '){e.preventDefault();$('play').click()}
+  else if(e.key==='ArrowRight')go(pos+1);
+  else if(e.key==='ArrowLeft')go(pos-1);
+  else if(e.key==='Enter'&&!e.target.closest('button')){revealed=true;renderAnswer()}
+  else if(e.key==='m'||e.key==='M')$('star').click();
+});
+buildOrder(false);render();
+}
+</script>
+</body>
+</html>
