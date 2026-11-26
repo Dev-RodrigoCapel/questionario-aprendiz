@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Questionário do Aprendiz</title>
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Aprendiz">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
@@ -123,6 +131,7 @@ select{text-align:center}
 </div>
 
 <script src="capacitor.js"></script>
+<script src="config.js"></script>
 <script src="questoes.js"></script>
 <script>
 {
@@ -135,9 +144,33 @@ const marked=new Set(store.get('marked',[]));
 let order=[],pos=0,revealed=false,playing=false,run=0;
 const tts='speechSynthesis' in window;
 const native=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
-const Leitor=native&&window.capacitorExports?window.capacitorExports.registerPlugin('Leitor'):null;
+const EXT=(window.APP_AUDIO||{}).ext||'';
+/* Player web dos áudios gravados (iPhone/navegador): um único <audio> encadeado pelo evento ended,
+   com arquivos de silêncio no lugar das pausas — assim não depende de timers. */
+function makeWebLeitor(){
+  const el=new Audio();el.preload='auto';el.setAttribute('playsinline','');
+  let q=[],i=0,cur=null,cb=null,rate=1;
+  const fire=e=>{if(cb)cb(e)};
+  function next(){
+    if(i>=q.length){cur=null;fire({type:'end',msg:'complete'});return}
+    cur=q[i++];if(cur.id)fire({type:'start',id:cur.id});
+    el.src=cur.file;el.playbackRate=cur.sil?1:rate;
+    const pr=el.play();if(pr)pr.catch(()=>{q=[];fire({type:'erro',msg:'O navegador bloqueou o áudio — toque em ▶ de novo.'});fire({type:'end',msg:'stopped'})});
+  }
+  el.addEventListener('ended',()=>{if(!cur)return;if(cur.id)fire({type:'done',id:cur.id});next()});
+  el.addEventListener('error',()=>{if(cur&&el.getAttribute('src'))next()});
+  return{
+    addListener(_,f){cb=f;return Promise.resolve()},
+    play(o){rate=o.rate||1;q=[];i=0;
+      for(const it of o.items){q.push({id:it.id,file:it.file});const sec=Math.round((it.pauseMs||0)/1000);if(sec>0)q.push({file:`audio/silencio${Math.min(sec,15)}.${EXT}`,sil:true})}
+      next();return Promise.resolve()},
+    stop(){q=[];i=0;cur=null;el.pause();return Promise.resolve()}
+  };
+}
+const Leitor=native&&window.capacitorExports?window.capacitorExports.registerPlugin('Leitor'):(!native&&EXT?makeWebLeitor():null);
 if(!tts&&!Leitor)$('warn').hidden=false;
-if(Leitor){$('note').textContent='A leitura continua com a tela apagada; para parar, use o botão Parar na notificação.';$('voiceRow').hidden=true}
+if(Leitor){$('voiceRow').hidden=true;$('note').textContent=native?'A leitura continua com a tela apagada; para parar, use o botão Parar na notificação.':'Durante a leitura a tela fica acesa automaticamente. No iPhone, não bloqueie a tela: a leitura pode parar.'}
+if(!native&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 const pad=n=>String(n).padStart(2,'0');
 const cur=()=>Q[order[pos]];
@@ -223,18 +256,28 @@ function nativeStart(){
   const items=[],last=S.auto?order.length-1:pos;
   for(let p=pos;p<=last;p++){
     const it=Q[order[p]],ref=S.readRef&&it.ref!=='—';
-    items.push({id:'q'+p,file:`audio/q${it.n}.ogg`,pauseMs:ref?0:S.pause*1000});
-    if(ref)items.push({id:'r'+p,file:`audio/r${it.n}.ogg`,pauseMs:S.pause*1000});
-    items.push({id:'a'+p,file:`audio/a${it.n}.ogg`,pauseMs:p<last?1800:0});
+    items.push({id:'q'+p,file:`audio/q${it.n}.${EXT}`,pauseMs:ref?0:S.pause*1000});
+    if(ref)items.push({id:'r'+p,file:`audio/r${it.n}.${EXT}`,pauseMs:S.pause*1000});
+    items.push({id:'a'+p,file:`audio/a${it.n}.${EXT}`,pauseMs:p<last?1800:0});
   }
   nativePlay(items);
 }
+function mediaInfo(){
+  if(native||!('mediaSession' in navigator))return;
+  try{const it=cur();navigator.mediaSession.metadata=new MediaMetadata({title:`Pergunta ${it.n}`,artist:'Questionário do Aprendiz',album:it.q,artwork:[{src:'icons/icon-512.png',sizes:'512x512',type:'image/png'}]})}catch(e){}
+}
+if(!native&&'mediaSession' in navigator){try{
+  navigator.mediaSession.setActionHandler('play',()=>{if(!playing)start()});
+  navigator.mediaSession.setActionHandler('pause',()=>stop('Leitura parada.'));
+  navigator.mediaSession.setActionHandler('nexttrack',()=>go(pos+1));
+  navigator.mediaSession.setActionHandler('previoustrack',()=>go(pos-1));
+}catch(e){}}
 if(Leitor)Leitor.addListener('leitor',e=>{
   if(e.type==='erro'){status(String(e.msg||''));return}
   if(!playing)return;
   const k=e.id?e.id[0]:'',p=e.id?+e.id.slice(1):-1;
   if(e.type==='start'){
-    clearInterval(cd);
+    clearInterval(cd);mediaInfo();
     if(k==='q'){pos=p;revealed=false;render();status(`<b>Pergunta ${cur().n}</b>`)}
     else if(k==='a'){pos=p;revealed=true;render();status(`<b>${cur().label||'Resposta'}</b>`)}
   }else if(e.type==='done'&&!single1&&((k==='q'&&!S.readRef)||k==='r')&&S.pause>0){
@@ -263,7 +306,7 @@ async function playFrom(t){
 function start(){if(Leitor)return nativeStart();if(!tts){$('warn').hidden=false;return}stop();const t=run;setPlaying(true);setTimeout(()=>playFrom(t),80)}
 async function single(part){
   if(Leitor){stop('');single1=true;const it=cur();if(part==='a'){revealed=true;renderAnswer()}
-    nativePlay([{id:part+pos,file:`audio/${part}${it.n}.ogg`,pauseMs:0}]);return}
+    nativePlay([{id:part+pos,file:`audio/${part}${it.n}.${EXT}`,pauseMs:0}]);return}
   if(!tts){$('warn').hidden=false;return}
   stop();const t=run,it=cur();setPlaying(true);
   if(part==='a'){revealed=true;renderAnswer()}

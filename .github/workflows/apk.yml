@@ -1,4 +1,4 @@
-name: Gerar APK
+name: Gerar APK e versão web
 
 on:
   push:
@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   apk:
@@ -46,12 +48,19 @@ jobs:
           for v in pt_BR-faber-medium pt_BR-cadu-medium pt_BR-jeff-medium; do
             [ -f .vozes/$v.onnx ] || python -m piper.download_voices --download-dir .vozes $v
           done
-          python tools/gerar_audio.py www/audio
-          ls www/audio | wc -l && du -sh www/audio
+          MP3_DIR=site/audio python tools/gerar_audio.py www/audio
+          ls www/audio | wc -l && du -sh www/audio site/audio
           # amostras para comparar vozes (vão para a página de Releases)
           export AMOSTRA="Pergunta 36. Quais são as Joias Móveis? Resposta. Esquadro, Nível e Prumo, que adornam o Venerável e os Vigilantes."
           for v in pt_BR-faber-medium pt_BR-cadu-medium pt_BR-jeff-medium; do VOZ=$v python tools/gerar_audio.py amostras; done
           ls -la amostras
+
+      - name: Montar versão web (iPhone / navegador)
+        run: python tools/montar_web.py
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
 
       - run: npm ci
       - run: npx cap sync android
@@ -77,3 +86,15 @@ jobs:
           gh release create apk Aprendiz.apk amostras/*.ogg \
             --title "Aprendiz v2 — build ${{ github.run_number }}" \
             --notes "APK gerado automaticamente a partir do commit ${{ github.sha }}."
+
+  web:
+    # Publica a versão web no GitHub Pages.
+    # Requer uma vez: Settings › Pages › Source = "GitHub Actions".
+    needs: apk
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
