@@ -39,7 +39,8 @@ jobs:
         env:
           VOZ: pt_BR-faber-medium
         run: |
-          sudo apt-get install -y -qq ffmpeg > /dev/null
+          command -v ffmpeg || { sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null; }
+          ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libopus
           pip install -q piper-tts==1.8.0
           mkdir -p .vozes
           for v in pt_BR-faber-medium pt_BR-cadu-medium pt_BR-jeff-medium; do
