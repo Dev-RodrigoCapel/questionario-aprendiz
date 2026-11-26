@@ -5,12 +5,12 @@ ou aleatório, e leitura em voz alta da pergunta, da pausa para pensar e da resp
 
 ## Voz (v2)
 
-As falas são gravadas no build com a voz neural **Piper `pt_BR-faber-medium`** (masculina, gratuita, offline),
+As falas são gravadas no build com a voz neural **Piper `pt_BR-cadu-medium`** (masculina, a mais grave das três, gratuita, offline),
 um pouco mais grave e pausada (`tools/gerar_audio.py`: RITMO, TOM, PAUSA_FRASE). Os `.ogg` vão dentro do APK
 (`www/audio/`) e são tocados pelo serviço nativo. Para trocar de voz, mude `VOZ` em `.github/workflows/apk.yml`
-(ex.: `pt_BR-cadu-medium`, `pt_BR-jeff-medium`); amostras das três ficam na página Releases.
+(ex.: `pt_BR-faber-medium`, `pt_BR-jeff-medium`); amostras das três ficam na página Releases.
 
-Localmente: `pip install piper-tts`, baixe a voz com `python -m piper.download_voices --download-dir .vozes pt_BR-faber-medium`
+Localmente: `pip install piper-tts`, baixe a voz com `python -m piper.download_voices --download-dir .vozes pt_BR-cadu-medium`
 e rode `python tools/gerar_audio.py` antes do `npx cap sync android`.
 
 ## Como a reprodução funciona no Android

@@ -1,7 +1,7 @@
 """Gera www/audio/*.ogg com a voz neural Piper (offline, gratuita).
 
 Variáveis de ambiente:
-  VOZ          modelo Piper (padrão pt_BR-faber-medium, masculina)
+  VOZ          modelo Piper (padrão pt_BR-cadu-medium, masculina e grave)
   VOZES_DIR    pasta com os .onnx baixados (padrão .vozes)
   RITMO        length_scale; >1 fala mais devagar/compassado (padrão 1.18)
   TOM          fator de tom; <1 deixa a voz mais grave (padrão 0.93)
@@ -10,7 +10,7 @@ Variáveis de ambiente:
 import json, os, subprocess, sys, tempfile, wave
 from piper import PiperVoice, SynthesisConfig
 
-VOZ = os.environ.get("VOZ", "pt_BR-faber-medium")
+VOZ = os.environ.get("VOZ", "pt_BR-cadu-medium")
 DIR = os.environ.get("VOZES_DIR", ".vozes")
 RITMO = float(os.environ.get("RITMO", "1.18"))
 TOM = float(os.environ.get("TOM", "0.93"))

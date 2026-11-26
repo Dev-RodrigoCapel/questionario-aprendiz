@@ -37,7 +37,7 @@ jobs:
 
       - name: Gerar áudios das perguntas e respostas
         env:
-          VOZ: pt_BR-faber-medium
+          VOZ: pt_BR-cadu-medium
         run: |
           command -v ffmpeg || { sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null; }
           ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libopus
