@@ -5,3 +5,4 @@ www/audio/
 amostras/
 .vozes/
 site/
+__pycache__/
